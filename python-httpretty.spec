@@ -1,6 +1,6 @@
 %if 0%{?fedora}
 # escaping for EPEL.
-%global with_python3 0
+%global with_python3 1
 %endif
 
 %global run_tests 0
