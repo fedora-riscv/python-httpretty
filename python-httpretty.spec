@@ -3,11 +3,17 @@
 %global with_python3 1
 %endif
 
+%if 0%{?rhel} && 0%{?rhel} <= 6
+%{!?__python2: %global __python2 /usr/bin/python2}
+%{!?python2_sitelib: %global python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
+%{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+%endif
+
 %global run_tests 0
 
 Name:           python-httpretty
 Version:        0.8.3
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
@@ -112,6 +118,9 @@ popd
 
 
 %changelog
+* Mon Mar 02 2015 Jamie Lennox <jamielennox@redhat.com> - 0.8.3-3
+- Added conditional __python2 macros for building on RHEL 6.
+
 * Tue Feb 24 2015 Jamie Lennox <jamielennox@redhat.com> - 0.8.3-2
 - Added with_python3 build flags to enable building on EPEL.
 
