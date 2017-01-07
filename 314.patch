@@ -1,0 +1,31 @@
+From f642a108a5eb199665a39830f095073bd2406003 Mon Sep 17 00:00:00 2001
+From: Shaform <shaform@gmail.com>
+Date: Tue, 20 Dec 2016 20:26:36 +0800
+Subject: [PATCH] fix test on python3
+
+---
+ tests/functional/base.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tests/functional/base.py b/tests/functional/base.py
+index b8355f0..6f143f6 100644
+--- a/tests/functional/base.py
++++ b/tests/functional/base.py
+@@ -37,7 +37,7 @@
+ from functools import wraps
+ 
+ from os.path import abspath, dirname, join
+-from httpretty.core import POTENTIAL_HTTP_PORTS, old_socket
++from httpretty.core import POTENTIAL_HTTP_PORTS, old_socket, decode_utf8
+ 
+ 
+ def get_free_tcp_port():
+@@ -63,7 +63,7 @@ def post(self, matched):
+         payload = dict(self.request.arguments)
+         self.write(json.dumps({
+             matched or 'index': payload,
+-            'req_body': self.request.body,
++            'req_body': decode_utf8(self.request.body),
+             'req_headers': dict(self.request.headers.items()),
+         }, indent=4))
+ 

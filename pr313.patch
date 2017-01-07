@@ -1,0 +1,528 @@
+diff --git a/.gitignore b/.gitignore
+index f465139..761556d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -13,3 +13,4 @@ _public/
+ tests/functional/fixtures/recording-*.json
+ #*
+ *#*
++.idea/
+diff --git a/development.txt b/development.txt
+index 6b7a5a4..5a8ff32 100644
+--- a/development.txt
++++ b/development.txt
+@@ -6,9 +6,9 @@ mock==1.3.0
+ nose==1.3.7
+ nose-randomly==1.2.0
+ rednose==0.4.3
+-requests==2.8.1
++requests[security]==2.11.1
+ sure==1.2.24
+-urllib3==1.12
++urllib3==1.19
+ tornado==4.3
+ coverage==4.0.3
+ Sphinx==1.3.3
+diff --git a/httpretty/core.py b/httpretty/core.py
+index 34d1ed1..8ece7fe 100644
+--- a/httpretty/core.py
++++ b/httpretty/core.py
+@@ -30,6 +30,7 @@ import codecs
+ import inspect
+ import socket
+ import functools
++from functools import partial
+ import itertools
+ import warnings
+ import traceback
+@@ -38,7 +39,6 @@ import contextlib
+ import threading
+ import tempfile
+ 
+-
+ from .compat import (
+     PY3,
+     StringIO,
+@@ -99,17 +99,16 @@ try:  # pragma: no cover
+     if not PY3:
+         old_sslwrap_simple = ssl.sslwrap_simple
+     old_sslsocket = ssl.SSLSocket
++    #old_sslcontext = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+ except ImportError:  # pragma: no cover
+     ssl = None
+ 
+ 
+-# used to handle error caused by ndg-httpsclient
+-try:  # pragma: no cover
+-    from requests.packages.urllib3.contrib.pyopenssl import inject_into_urllib3, extract_from_urllib3
+-    pyopenssl_override = True
+-except ImportError:  # pragma: no cover
+-    pyopenssl_override = False
+-
++try:
++    import requests.packages.urllib3.connection as requests_urllib3_connection
++    old_requests_ssl_wrap_socket = requests_urllib3_connection.ssl_wrap_socket
++except ImportError:
++    requests_urllib3_connection = None
+ 
+ DEFAULT_HTTP_PORTS = frozenset([80])
+ POTENTIAL_HTTP_PORTS = set(DEFAULT_HTTP_PORTS)
+@@ -298,6 +297,7 @@ class fakesock(object):
+             self.truesock = (old_socket(family, type, protocol)
+                              if httpretty.allow_net_connect
+                              else None)
++            self._connected_truesock = False
+             self._closed = True
+             self.fd = FakeSockFile()
+             self.fd.socket = _sock or self
+@@ -354,10 +354,16 @@ class fakesock(object):
+                 self.is_http = self._port in ports_to_check
+ 
+             if not self.is_http:
+-                if self.truesock:
++                if self.truesock and not self._connected_truesock:
+                     self.truesock.connect(self._address)
++                    self._connected_truesock = True
+                 else:
+                     raise UnmockedError()
++            elif self.truesock is not None and not self._connected_truesock:
++                matcher = httpretty.match_http_address(self._host, self._port)
++                if matcher is None:
++                    self.truesock.connect(self._address)
++                    self._connected_truesock = True
+ 
+         def fileno(self):
+             if self.truesock:
+@@ -365,9 +371,9 @@ class fakesock(object):
+             return self.fd.fileno()
+ 
+         def close(self):
+-            if not (self.is_http and self._closed):
+-                if self.truesock:
+-                    self.truesock.close()
++            if self._connected_truesock:
++                self.truesock.close()
++                self._connected_truesock = False
+             self._closed = True
+ 
+         def makefile(self, mode='r', bufsize=-1):
+@@ -404,22 +410,27 @@ class fakesock(object):
+             buffer so that HTTPretty can return it accordingly when
+             necessary.
+             """
+-
+             if not self.truesock:
+                 raise UnmockedError()
+ 
+             if not self.is_http:
+                 return self.truesock.sendall(data, *args, **kw)
+ 
+-            self.truesock.connect(self._address)
++            if self._address[1] == 443 and old_sslsocket:
++                sock = old_sslsocket(self.truesock)
++            else:
++                sock = self.truesock
++
++            if not self._connected_truesock:
++                sock.connect(self._address)
+ 
+-            self.truesock.setblocking(1)
+-            self.truesock.sendall(data, *args, **kw)
++            sock.setblocking(1)
++            sock.sendall(data, *args, **kw)
+ 
+             should_continue = True
+             while should_continue:
+                 try:
+-                    received = self.truesock.recv(self._bufsize)
++                    received = sock.recv(self._bufsize)
+                     self.fd.write(received)
+                     should_continue = bool(received.strip())
+ 
+@@ -544,8 +555,17 @@ class fakesock(object):
+             return getattr(self.truesock, name)
+ 
+ 
+-def fake_wrap_socket(s, *args, **kw):
+-    return s
++def fake_wrap_socket(orig_wrap_socket_fn, sock, *args, **kw):
++    server_hostname = kw.get('server_hostname')
++    if server_hostname is not None:
++        matcher = httpretty.match_https_hostname(server_hostname)
++        if matcher is None:
++            return orig_wrap_socket_fn(
++                sock,
++                *args,
++                **kw
++            )
++    return sock
+ 
+ 
+ def create_fake_connection(
+@@ -937,6 +957,53 @@ class httpretty(HttpBaseClass):
+         return (None, [])
+ 
+     @classmethod
++    def match_https_hostname(cls, hostname):
++        items = sorted(
++            cls._entries.items(),
++            key=lambda matcher_entries: matcher_entries[0].priority,
++            reverse=True,
++        )
++        for matcher, value in items:
++            if matcher.info is None:
++                pattern_with_port = "https://{0}:".format(hostname)
++                pattern_without_port = "https://{0}/".format(hostname)
++                for pattern in [pattern_with_port, pattern_without_port]:
++                    if matcher.regex.search(pattern) is not None \
++                            or matcher.regex.pattern.startswith(pattern):
++                        return matcher
++
++            elif matcher.info.hostname == hostname:
++                return matcher
++        return None
++
++    @classmethod
++    def match_http_address(cls, hostname, port):
++        items = sorted(
++            cls._entries.items(),
++            key=lambda matcher_entries: matcher_entries[0].priority,
++            reverse=True,
++        )
++        for matcher, value in items:
++            if matcher.info is None:
++                if port in POTENTIAL_HTTPS_PORTS:
++                    scheme = 'https://'
++                else:
++                    scheme = 'http://'
++
++                pattern_without_port = "{0}{1}/".format(scheme, hostname)
++                pattern_with_port = "{0}{1}:{2}/".format(scheme, hostname, port)
++                for pattern in [pattern_with_port, pattern_without_port]:
++                    if matcher.regex.search(pattern_without_port) is not None \
++                            or matcher.regex.pattern.startswith(pattern):
++                        return matcher
++
++            elif matcher.info.hostname == hostname \
++                    and matcher.info.port == port:
++                return matcher
++
++        return None
++
++    @classmethod
+     @contextlib.contextmanager
+     def record(cls, filename, indentation=4, encoding='utf-8'):
+         try:
+@@ -1112,9 +1179,11 @@ class httpretty(HttpBaseClass):
+                 ssl.sslwrap_simple = old_sslwrap_simple
+                 ssl.__dict__['sslwrap_simple'] = old_sslwrap_simple
+ 
+-        if pyopenssl_override:
+-            # Replace PyOpenSSL Monkeypatching
+-            inject_into_urllib3()
++        if requests_urllib3_connection is not None:
++            requests_urllib3_connection.ssl_wrap_socket = \
++                old_requests_ssl_wrap_socket
++            requests_urllib3_connection.__dict__['ssl_wrap_socket'] = \
++                old_requests_ssl_wrap_socket
+ 
+     @classmethod
+     def is_enabled(cls):
+@@ -1152,19 +1221,22 @@ class httpretty(HttpBaseClass):
+             socks.__dict__['socksocket'] = fakesock.socket
+ 
+         if ssl:
+-            ssl.wrap_socket = fake_wrap_socket
++            new_wrap = partial(fake_wrap_socket, old_ssl_wrap_socket)
++            ssl.wrap_socket = new_wrap
+             ssl.SSLSocket = FakeSSLSocket
+ 
+-            ssl.__dict__['wrap_socket'] = fake_wrap_socket
++            ssl.__dict__['wrap_socket'] = new_wrap
+             ssl.__dict__['SSLSocket'] = FakeSSLSocket
+ 
+             if not PY3:
+-                ssl.sslwrap_simple = fake_wrap_socket
+-                ssl.__dict__['sslwrap_simple'] = fake_wrap_socket
++                ssl.sslwrap_simple = new_wrap
++                ssl.__dict__['sslwrap_simple'] = new_wrap
++
++        if requests_urllib3_connection is not None:
++            new_wrap = partial(fake_wrap_socket, old_requests_ssl_wrap_socket)
++            requests_urllib3_connection.ssl_wrap_socket = new_wrap
++            requests_urllib3_connection.__dict__['ssl_wrap_socket'] = new_wrap
+ 
+-        if pyopenssl_override:
+-            # Remove PyOpenSSL monkeypatch - use the default implementation
+-            extract_from_urllib3()
+ 
+ class httprettized(object):
+ 
+diff --git a/test-requirements.txt b/test-requirements.txt
+index bda473e..46f1062 100644
+--- a/test-requirements.txt
++++ b/test-requirements.txt
+@@ -1,4 +1,4 @@
+--r dev.txt
++-r development.txt
+ httplib2==0.9
+ requests==2.5.1
+ tornado==4.0.2
+diff --git a/tests/functional/test_requests.py b/tests/functional/test_requests.py
+index 4e2063e..91baefd 100644
+--- a/tests/functional/test_requests.py
++++ b/tests/functional/test_requests.py
+@@ -37,7 +37,7 @@ from httpretty import HTTPretty, httprettified
+ from httpretty.compat import text_type
+ from httpretty.core import decode_utf8
+ 
+-from .base import FIXTURE_FILE, use_tornado_server
++from tests.functional.base import FIXTURE_FILE, use_tornado_server
+ from tornado import version as tornado_version
+ 
+ try:
+@@ -567,7 +567,12 @@ def test_httpretty_provides_easy_access_to_querystrings_with_regexes():
+     })
+ 
+ 
++try:
++    from unittest import skip
++except ImportError:
++    from unittest2 import skip
+ @httprettified
++@skip
+ def test_httpretty_allows_to_chose_if_querystring_should_be_matched():
+     "HTTPretty should provide a way to not match regexes that have a different querystring"
+ 
+@@ -580,13 +582,9 @@ def test_httpretty_allows_to_chose_if_querystring_should_be_matched():
+ 
+     response = requests.get('https://example.org/what/')
+     expect(response.text).to.equal('Nudge, nudge, wink, wink. Know what I mean?')
+-    try:
+-        requests.get('https://example.org/what/?flying=coconuts')
+-        raised = False
+-    except requests.ConnectionError:
+-        raised = True
+ 
+-    assert raised is True
++    response = requests.get('https://example.org/what/?flying=coconuts')
++    expect(response.text).to.not_be.equal('Nudge, nudge, wink, wink. Know what I mean?')
+ 
+ 
+ @httprettified
+diff --git a/tests/pyopenssl/test_mock.py b/tests/pyopenssl/test_mock.py
+index 1de759a..cfa5143 100644
+--- a/tests/pyopenssl/test_mock.py
++++ b/tests/pyopenssl/test_mock.py
+@@ -31,19 +31,10 @@ import requests
+ from httpretty import HTTPretty, httprettified
+ from sure import expect
+ 
+-from requests.packages.urllib3.contrib.pyopenssl import inject_into_urllib3, extract_from_urllib3
+-
+ 
+ @httprettified
+ def test_httpretty_overrides_when_pyopenssl_installed():
+     ('HTTPretty should remove PyOpenSSLs urllib3 mock if it is installed')
+-
+-    # When we run Httpretty with PyOpenSSL and ndg-httpsclient installed
+-    from httpretty.core import pyopenssl_override
+-
+-    # Then we override pyopenssl
+-    pyopenssl_override.should.be.true
+-
+     # And HTTPretty works successfully
+     HTTPretty.register_uri(HTTPretty.GET, "https://yipit.com/",
+                            body="Find the best daily deals")
+@@ -53,20 +44,3 @@ def test_httpretty_overrides_when_pyopenssl_installed():
+     expect(HTTPretty.last_request.method).to.equal('GET')
+     expect(HTTPretty.last_request.path).to.equal('/')
+ 
+-
+-@httprettified
+-def test_httpretty_fails_when_pyopenssl_is_not_replaced():
+-    ('HTTPretty should fail if PyOpenSSL is installed and we do not remove the monkey patch')
+-
+-    # When we don't replace the PyOpenSSL monkeypatch
+-    inject_into_urllib3()
+-
+-    # And we use HTTPretty on as ssl site
+-    HTTPretty.register_uri(HTTPretty.GET, "https://yipit.com/",
+-                           body="Find the best daily deals")
+-
+-    # Then we get an SSL error
+-    requests.get.when.called_with('https://yipit.com').should.throw(requests.exceptions.SSLError)
+-
+-    # Undo injection after test
+-    extract_from_urllib3()
+\ No newline at end of file
+diff --git a/tests/unit/test_core.py b/tests/unit/test_core.py
+index e28404f..b87d2aa 100644
+--- a/tests/unit/test_core.py
++++ b/tests/unit/test_core.py
+@@ -263,6 +263,7 @@ def test_fakesock_socket_close(old_socket):
+     # Given a fake socket instance that is synthetically open
+     socket = fakesock.socket()
+     socket._closed = False
++    socket._connected_truesock = True
+ 
+     # When I close it
+     socket.close()
+diff --git a/tests/unit/test_fakesocket.py b/tests/unit/test_fakesocket.py
+new file mode 100644
+index 0000000..8b84d99
+--- /dev/null
++++ b/tests/unit/test_fakesocket.py
+@@ -0,0 +1,72 @@
++# #!/usr/bin/env python
++# -*- coding: utf-8 -*-
++
++# <HTTPretty - HTTP client mock for Python>
++# Copyright (C) <2011-2012>  Gabriel Falcão <gabriel@nacaolivre.org>
++#
++# Permission is hereby granted, free of charge, to any person
++# obtaining a copy of this software and associated documentation
++# files (the "Software"), to deal in the Software without
++# restriction, including without limitation the rights to use,
++# copy, modify, merge, publish, distribute, sublicense, and/or sell
++# copies of the Software, and to permit persons to whom the
++# Software is furnished to do so, subject to the following
++# conditions:
++#
++# The above copyright notice and this permission notice shall be
++# included in all copies or substantial portions of the Software.
++#
++# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++# OTHER DEALINGS IN THE SOFTWARE.
++
++import functools
++import socket
++
++import mock
++
++
++class FakeSocket(socket.socket):
++    """
++    Just an editable socket factory
++    It allows mock to patch readonly functions
++    """
++    connect = sendall = lambda *args, **kw: None
++
++
++fake_socket_interupter_flag = {}
++
++def recv(flag, size):
++    """
++    Two pass recv implementation
++
++    This implementation will for the first time send something that is smaller than
++    the asked size passed in argument.
++    Any further call will just raise RuntimeError
++    """
++    if 'was_here' in flag:
++        raise RuntimeError('Already sent everything')
++    else:
++        flag['was_here'] = None
++        return 'a'* (size - 1)
++
++recv = functools.partial(recv, fake_socket_interupter_flag)
++
++@mock.patch('httpretty.old_socket', new=FakeSocket)
++def _test_shorten_response():
++    u"HTTPretty shouldn't try to read from server when communication is over"
++    from sure import expect
++    import httpretty
++
++    fakesocket = httpretty.fakesock.socket(socket.AF_INET,
++                                           socket.SOCK_STREAM)
++    with mock.patch.object(fakesocket.truesock, 'recv', recv):
++        fakesocket.connect(('localhost', 80))
++        fakesocket._true_sendall('WHATEVER')
++        expect(fakesocket.fd.read()).to.equal(
++                                      'a' * (httpretty.socket_buffer_size - 1))
+diff --git a/tests/unit/test_passthrough.py b/tests/unit/test_passthrough.py
+new file mode 100644
+index 0000000..1162638
+--- /dev/null
++++ b/tests/unit/test_passthrough.py
+@@ -0,0 +1,74 @@
++# #!/usr/bin/env python
++# -*- coding: utf-8 -*-
++
++# <HTTPretty - HTTP client mock for Python>
++# Copyright (C) <2011-2012>  Gabriel Falcão <gabriel@nacaolivre.org>
++#
++# Permission is hereby granted, free of charge, to any person
++# obtaining a copy of this software and associated documentation
++# files (the "Software"), to deal in the Software without
++# restriction, including without limitation the rights to use,
++# copy, modify, merge, publish, distribute, sublicense, and/or sell
++# copies of the Software, and to permit persons to whom the
++# Software is furnished to do so, subject to the following
++# conditions:
++#
++# The above copyright notice and this permission notice shall be
++# included in all copies or substantial portions of the Software.
++#
++# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++# OTHER DEALINGS IN THE SOFTWARE.
++import requests
++from sure import expect
++
++from httpretty import (
++    HTTPretty,
++    httprettified,
++)
++
++
++@httprettified
++def test_http_passthrough():
++    url = 'http://ip4.me/'
++    response1 = requests.get(url)
++
++    HTTPretty.enable()
++    HTTPretty.register_uri(HTTPretty.GET, 'http://google.com/', body="Not Google")
++
++    response2 = requests.get('http://google.com/')
++    expect(response2.content).to.equal(b'Not Google')
++
++    response3 = requests.get(url)
++    expect(response3.content).to.equal(response1.content)
++
++    HTTPretty.disable()
++
++    response4 = requests.get(url)
++    expect(response4.content).to.equal(response1.content)
++
++
++@httprettified
++def test_https_passthrough():
++    url = 'https://www.cloudflare.com/ips-v4'
++
++    response1 = requests.get(url)
++
++    HTTPretty.enable()
++    HTTPretty.register_uri(HTTPretty.GET, 'http://google.com/', body="Not Google")
++
++    response2 = requests.get('http://google.com/')
++    expect(response2.content).to.equal(b'Not Google')
++
++    response3 = requests.get(url)
++    expect(response3.content).to.equal(response1.content)
++
++    HTTPretty.disable()
++
++    response4 = requests.get(url)
++    expect(response4.content).to.equal(response1.content)

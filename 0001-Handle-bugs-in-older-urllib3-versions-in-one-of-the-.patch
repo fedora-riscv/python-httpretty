@@ -1,0 +1,66 @@
+From 5d2f8d99c28519fe0cf47ebf5f043928d422b757 Mon Sep 17 00:00:00 2001
+From: Adam Williamson <awilliam@redhat.com>
+Date: Fri, 6 Jan 2017 17:56:43 -0800
+Subject: [PATCH] Handle bugs in older urllib3 versions in one of the tests
+
+Older urllib3 versions had a bug where they lower-cased header
+names (in response header dicts). That makes one of our tests
+fail with older urllib3, because the test expects a 'Server'
+header. As this isn't our fault at all, just have the test cope
+with it by checking if the header dict has a 'server' key and
+replacing it with a 'Server' key with the same value.
+
+urllib3 1.10 also had a bug when you called dict() on its
+HTTPHeaderDict class; it would turn this:
+
+{'headername': 'value'}
+
+Into this:
+
+{'headername': ['headername', 'value']}
+
+That was fixed in 1.11, but RHEL 6 still has 1.10, so let's
+work with that by doing dict(headerdict.items()) instead of
+just dict(headerdict) (when we're recording the calls).
+---
+ httpretty/core.py                 | 7 ++++++-
+ tests/functional/test_requests.py | 5 +++++
+ 2 files changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/httpretty/core.py b/httpretty/core.py
+index 34d1ed1..0c2d334 100644
+--- a/httpretty/core.py
++++ b/httpretty/core.py
+@@ -971,7 +971,12 @@ class httpretty(HttpBaseClass):
+                 'response': {
+                     'status': response.status,
+                     'body': decode_utf8(response.data),
+-                    'headers': dict(response.headers)
++                    # urllib3 1.10 had a bug if you just did:
++                    # dict(response.headers)
++                    # which would cause all the values to become lists
++                    # with the header name as the first item and the
++                    # true value as the second item. Workaround that
++                    'headers': dict(response.headers.items())
+                 }
+             })
+             cls.enable()
+diff --git a/tests/functional/test_requests.py b/tests/functional/test_requests.py
+index 4e2063e..18c89f8 100644
+--- a/tests/functional/test_requests.py
++++ b/tests/functional/test_requests.py
+@@ -742,6 +742,11 @@ def test_recording_calls(port):
+     response['response'].should.have.key("status").being.equal(200)
+     response['response'].should.have.key("body").being.an(text_type)
+     response['response'].should.have.key("headers").being.a(dict)
++    # older urllib3 had a bug where header keys were lower-cased:
++    # https://github.com/shazow/urllib3/issues/236
++    # cope with that
++    if 'server' in response['response']["headers"]:
++        response['response']["headers"]["Server"] = response['response']["headers"].pop("server")
+     response['response']["headers"].should.have.key("Server").being.equal("TornadoServer/" + tornado_version)
+ 
+     # And When I playback the previously recorded calls
+-- 
+2.11.0
+
