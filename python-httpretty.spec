@@ -16,7 +16,7 @@
 Name:           python-httpretty
 Version:        0.8.14
 # If github_date is defined, assume a post-release snapshot
-Release:        1%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        2%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
@@ -55,6 +55,10 @@ Patch2:         python-httpretty-fakesock_getpeercert_noconnect.patch
 # Fix a couple of issues with urllib 1.10 (as found in RHEL 6)
 # https://github.com/gabrielfalcao/HTTPretty/pull/315
 Patch3:         0001-Handle-bugs-in-older-urllib3-versions-in-one-of-the-.patch
+
+# Fix setUp and tearDown not calling reset
+# https://github.com/gabrielfalcao/HTTPretty/pull/317
+Patch4:         0001-Call-reset-from-setUp-and-tearDown-in-addition-to-en.patch
 
 BuildArch:      noarch
 
@@ -180,6 +184,9 @@ popd
 
 
 %changelog
+* Fri Jan 27 2017 Adam Williamson <awilliam@redhat.com> - 0.8.14-2.20161011git70af1f8
+- Backport PR #317 (call reset from setUp / tearDown) - thanks gholms
+
 * Fri Jan 06 2017 Adam Williamson <awilliam@redhat.com> - 0.8.14-1.20161011git70af1f8
 - Update to current git master (as a 0.8.14 post-release snapshot)
 - Backport PR #313 (fix with recent OpenSSL, requests and urllib3)

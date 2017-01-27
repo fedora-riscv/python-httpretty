@@ -1,0 +1,37 @@
+From 01474bf64e0434881059a3638abff5bb62eaedb1 Mon Sep 17 00:00:00 2001
+From: Scott Moser <smoser@brickies.net>
+Date: Tue, 24 Jan 2017 12:30:47 -0500
+Subject: [PATCH] Call reset from setUp and tearDown in addition to enable and
+ disable.
+
+When decorating a class via setUp and tearDown, reset() was not being
+called.  That was an unintentional change in behavior from previous versions.
+
+Addresses #316.
+---
+ httpretty/core.py | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/httpretty/core.py b/httpretty/core.py
+index 34d1ed1..c408c38 100644
+--- a/httpretty/core.py
++++ b/httpretty/core.py
+@@ -1189,6 +1189,7 @@ def httprettified(test):
+                           if hasattr(klass, 'setUp')
+                           else None)
+         def new_setUp(self):
++            httpretty.reset()
+             httpretty.enable()
+             if use_addCleanup:
+                 self.addCleanup(httpretty.disable)
+@@ -1202,6 +1203,7 @@ def httprettified(test):
+                                  else None)
+             def new_tearDown(self):
+                 httpretty.disable()
++                httpretty.reset()
+                 if original_tearDown:
+                     original_tearDown(self)
+             klass.tearDown = new_tearDown
+-- 
+2.9.3
+
