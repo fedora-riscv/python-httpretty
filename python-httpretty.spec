@@ -16,7 +16,7 @@
 Name:           python-httpretty
 Version:        0.8.14
 # If github_date is defined, assume a post-release snapshot
-Release:        2%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        3%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
@@ -184,6 +184,9 @@ popd
 
 
 %changelog
+* Sat Feb 11 2017 Fedora Release Engineering <releng@fedoraproject.org> - 0.8.14-3.20161011git70af1f8
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_26_Mass_Rebuild
+
 * Fri Jan 27 2017 Adam Williamson <awilliam@redhat.com> - 0.8.14-2.20161011git70af1f8
 - Backport PR #317 (call reset from setUp / tearDown) - thanks gholms
 
