@@ -16,7 +16,7 @@
 Name:           python-httpretty
 Version:        0.8.14
 # If github_date is defined, assume a post-release snapshot
-Release:        4%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        5%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
@@ -62,8 +62,6 @@ Patch4:         0001-Call-reset-from-setUp-and-tearDown-in-addition-to-en.patch
 
 BuildArch:      noarch
 
-Requires:       python-urllib3
-
 BuildRequires:  python2-devel
 BuildRequires:  python-setuptools
 # For tests
@@ -79,12 +77,21 @@ BuildRequires:  python-tornado
 BuildRequires:  python-unittest2
 %endif
 
-%description
-Once upon a time a python developer wanted to use a RESTful API, everything was
-fine but until the day he needed to test the code that hits the RESTful API:
-what if the API server is down? What if its content has changed?
-
+%global _description\
+Once upon a time a python developer wanted to use a RESTful API, everything was\
+fine but until the day he needed to test the code that hits the RESTful API:\
+what if the API server is down? What if its content has changed?\
+\
 Don't worry, HTTPretty is here for you.
+
+%description %_description
+
+%package -n python2-httpretty
+Summary: %summary
+Requires:       python-urllib3
+%{?python_provide:%python_provide python2-httpretty}
+
+%description -n python2-httpretty %_description
 
 %if 0%{?with_python3}
 %package -n python3-httpretty
@@ -168,7 +175,7 @@ popd
 %endif
 
 
-%files
+%files -n python2-httpretty
 %doc README.md
 %license COPYING
 %{python_sitelib}/httpretty
@@ -184,6 +191,10 @@ popd
 
 
 %changelog
+* Sat Aug 19 2017 Zbigniew Jędrzejewski-Szmek <zbyszek@in.waw.pl> - 0.8.14-5.20161011git70af1f8
+- Python 2 binary package renamed to python2-httpretty
+  See https://fedoraproject.org/wiki/FinalizingFedoraSwitchtoPython3
+
 * Thu Jul 27 2017 Fedora Release Engineering <releng@fedoraproject.org> - 0.8.14-4.20161011git70af1f8
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Mass_Rebuild
 
