@@ -1,4 +1,4 @@
-%if 0%{?fedora}
+%if 0%{?fedora} || 0%{?rhel} > 7
 # escaping for EPEL.
 %global with_python3 1
 %endif
@@ -16,7 +16,7 @@
 Name:           python-httpretty
 Version:        0.8.14
 # If github_date is defined, assume a post-release snapshot
-Release:        5%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        6%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
@@ -191,6 +191,9 @@ popd
 
 
 %changelog
+* Fri Sep 29 2017 Troy Dawson <tdawson@redhat.com> - 0.8.14-6.20161011git70af1f8
+- Cleanup spec file conditionals
+
 * Sat Aug 19 2017 Zbigniew Jędrzejewski-Szmek <zbyszek@in.waw.pl> - 0.8.14-5.20161011git70af1f8
 - Python 2 binary package renamed to python2-httpretty
   See https://fedoraproject.org/wiki/FinalizingFedoraSwitchtoPython3
