@@ -16,7 +16,7 @@
 Name:           python-httpretty
 Version:        0.8.14
 # If github_date is defined, assume a post-release snapshot
-Release:        7%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        8%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
@@ -63,15 +63,15 @@ Patch4:         0001-Call-reset-from-setUp-and-tearDown-in-addition-to-en.patch
 BuildArch:      noarch
 
 BuildRequires:  python2-devel
-BuildRequires:  python-setuptools
+BuildRequires:  python2-setuptools
 # For tests
-BuildRequires:  python-httplib2
-BuildRequires:  python-mock
-BuildRequires:  python-nose
-BuildRequires:  python-requests
-BuildRequires:  python-sure
-BuildRequires:  python-urllib3
-BuildRequires:  python-tornado
+BuildRequires:  python2-httplib2
+BuildRequires:  python2-mock
+BuildRequires:  python2-nose
+BuildRequires:  python2-requests
+BuildRequires:  python2-sure
+BuildRequires:  python2-urllib3
+BuildRequires:  python2-tornado
 %if 0%{?epel} == 6
 # Need unittest2 to get the 'skip' decorator
 BuildRequires:  python-unittest2
@@ -88,7 +88,7 @@ Don't worry, HTTPretty is here for you.
 
 %package -n python2-httpretty
 Summary: %summary
-Requires:       python-urllib3
+Requires:       python2-urllib3
 %{?python_provide:%python_provide python2-httpretty}
 
 %description -n python2-httpretty %_description
@@ -191,6 +191,10 @@ popd
 
 
 %changelog
+* Wed Feb 21 2018 Iryna Shcherbina <ishcherb@redhat.com> - 0.8.14-8.20161011git70af1f8
+- Update Python 2 dependency declarations to new packaging standards
+  (See https://fedoraproject.org/wiki/FinalizingFedoraSwitchtoPython3)
+
 * Fri Feb 09 2018 Fedora Release Engineering <releng@fedoraproject.org> - 0.8.14-7.20161011git70af1f8
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_28_Mass_Rebuild
 
