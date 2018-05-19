@@ -13,19 +13,19 @@ Addresses #316.
  1 file changed, 2 insertions(+)
 
 diff --git a/httpretty/core.py b/httpretty/core.py
-index 34d1ed1..c408c38 100644
+index 4f72678..25df1fd 100644
 --- a/httpretty/core.py
 +++ b/httpretty/core.py
-@@ -1189,6 +1189,7 @@ def httprettified(test):
-                           if hasattr(klass, 'setUp')
+@@ -1580,6 +1580,7 @@ def httprettified(test):
                            else None)
+ 
          def new_setUp(self):
 +            httpretty.reset()
              httpretty.enable()
              if use_addCleanup:
                  self.addCleanup(httpretty.disable)
-@@ -1202,6 +1203,7 @@ def httprettified(test):
-                                  else None)
+@@ -1594,6 +1595,7 @@ def httprettified(test):
+ 
              def new_tearDown(self):
                  httpretty.disable()
 +                httpretty.reset()

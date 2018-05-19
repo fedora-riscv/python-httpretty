@@ -7,46 +7,24 @@
 %global github_name     HTTPretty
 %global modname         httpretty
 # define these only if actually building from a GH snapshot not a release tarball
-%global github_commit   70af1f8cf925ef50cb5e72212fb0aa46e1451dc3
-%global shortcommit     %(c=%{github_commit}; echo ${c:0:7})
-%global github_date     20161011
+#global github_commit   70af1f8cf925ef50cb5e72212fb0aa46e1451dc3
+#global shortcommit     %%(c=%%{github_commit}; echo ${c:0:7})
+#global github_date     20161011
+
 
 %global run_tests 1
 
 Name:           python-httpretty
-Version:        0.8.14
+Version:        0.9.4
 # If github_date is defined, assume a post-release snapshot
-Release:        8%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        1%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
 URL:            http://falcao.it/HTTPretty/
-Source0:        https://github.com/%{github_owner}/%{github_name}/archive/%{github_commit}/%{github_name}-%{shortcommit}.tar.gz
-# Alternative for building from a release tarball
-#Source0:        https://files.pythonhosted.org/packages/source/h/httpretty/httpretty-%{version}.tar.gz
-
-# Fix HTTPS with recent openssl
-# This is https://github.com/gabrielfalcao/HTTPretty/pull/313
-# Squashed by checking the PR branch out from git and doing:
-# git diff master > pr313.patch (because just getting 313.patch from github
-# results in a patch that doesn't apply)
-# I edited the patch to apply several fixes:
-# 1. Rename the `_socket` arg of the `fake_wrap_socket` function to `sock`
-#    (as otherwise it breaks due to urllib3 calling `wrap_socket` with the
-#    socket arg named as `sock`)
-# 2. In test_passthrough.py, correct the type of the expected response
-#    (requests `Response.content` is a bytestring, not a string)
-# 3. Remove the addition of `test_httpretty_should_passthrough_for_ssl`,
-#    as it requires a remote trip
-# 4. Use {0} ({1}, {2}...) in format strings, not just {}, as {} doesn't
-#    work in Python 2.6 (EPEL 6)
-# 5. Try importing skip from unittest2 if it's not available from unittest
-#    (Python 2.6 unittest didn't have it)
-# I've noted all these issues in comments on the PR
-Patch0:         pr313.patch
-
-# Fix tests with Python 3
-Patch1:         https://github.com/gabrielfalcao/HTTPretty/pull/314.patch
+Source0:        https://files.pythonhosted.org/packages/source/h/httpretty/httpretty-%{version}.tar.gz
+# Alternative for building from a github snapshot
+#Source0:        https://github.com/%{github_owner}/%{github_name}/archive/%{github_commit}/%{github_name}-%{shortcommit}.tar.gz
 
 # Avoid unnecessary remote access requirement (note: test only actually
 # does a remote connection after PR #313)
@@ -88,7 +66,7 @@ Don't worry, HTTPretty is here for you.
 
 %package -n python2-httpretty
 Summary: %summary
-Requires:       python2-urllib3
+Requires:       python2-six
 %{?python_provide:%python_provide python2-httpretty}
 
 %description -n python2-httpretty %_description
@@ -96,7 +74,7 @@ Requires:       python2-urllib3
 %if 0%{?with_python3}
 %package -n python3-httpretty
 Summary:        HTTP request mock tool for Python 3
-Requires:       python3-urllib3
+Requires:       python3-six
 
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
@@ -118,28 +96,14 @@ Don't worry, HTTPretty is here for you.
 %endif
 
 %prep
-%autosetup -n %{github_name}-%{github_commit} -p1
+%autosetup -n httpretty-%{version} -p1
 
-# Alternative for building from a release tarball
-#autosetup -n httpretty-%{version} -p1
+# Alternative for building from commit tarball
+#autosetup -n %%{github_name}-%%{github_commit} -p1
 
-# un-pin requirements
-sed -i -e 's/==.*//g' development.txt test-requirements.txt requirements.txt
-sed -i -e 's/requests\[security\]/requests/g' development.txt
-# remove some 'requirements' that aren't actually needed just for us to run tests
-sed -i -e '/^coverage/d' development.txt test-requirements.txt
-sed -i -r -e '/^(S|s)phinx/d' development.txt
-sed -i -e '/^rednose/d' development.txt
-sed -i -e '/^nose-randomly/d' development.txt
-sed -i -e '/^flake8/d' development.txt
-sed -i -e '/^ipdb/d' development.txt
-# These tests require a remote roundtrip, so remove them
-rm tests/unit/test_passthrough.py
-
-%if 0%{?with_python3}
-rm -rf %{py3dir}
-cp -a . %{py3dir}
-%endif
+# nose plugins we don't have yet
+sed -i 's/^with-randomly = 1$//' setup.cfg
+sed -i 's/^rednose = 1$//' setup.cfg
 
 %build
 # setup.py contains non-ASCII characters; in Koji build environment
@@ -147,9 +111,7 @@ cp -a . %{py3dir}
 LANG=en_US.UTF-8 %py2_build
 
 %if 0%{?with_python3}
-pushd %{py3dir}
 LANG=en_US.UTF-8 %py3_build
-popd
 %endif
 
 %install
@@ -157,33 +119,29 @@ rm -rf $RPM_BUILD_ROOT
 LANG=en_US.UTF-8 %py2_install
 
 %if 0%{?with_python3}
-pushd %{py3dir}
 LANG=en_US.UTF-8 %py3_install
-popd
 %endif
 
 
 %check
 %if %{run_tests}
-LANG=en_US.UTF-8 %{__python2} setup.py test
+LANG=en_US.UTF-8 %{__python2} -m nose -v
 
 %if 0%{?with_python3}
-pushd %{py3dir}
-LANG=en_US.UTF-8 %{__python3} setup.py test
-popd
+LANG=en_US.UTF-8 %{__python3} -m nose -v
 %endif
 %endif
 
 
 %files -n python2-httpretty
-%doc README.md
+%doc README.rst
 %license COPYING
 %{python_sitelib}/httpretty
 %{python_sitelib}/httpretty-%{version}-py2.?.egg-info
 
 %if 0%{?with_python3}
 %files -n python3-httpretty
-%doc README.md
+%doc README.rst
 %license COPYING
 %{python3_sitelib}/httpretty
 %{python3_sitelib}/httpretty-%{version}-py3.?.egg-info
@@ -191,6 +149,9 @@ popd
 
 
 %changelog
+* Sat May 19 2018 Miro Hrončok <mhroncok@redhat.com> - 0.9.4-1
+- Update to 0.9.4 (#1572888)
+
 * Wed Feb 21 2018 Iryna Shcherbina <ishcherb@redhat.com> - 0.8.14-8.20161011git70af1f8
 - Update Python 2 dependency declarations to new packaging standards
   (See https://fedoraproject.org/wiki/FinalizingFedoraSwitchtoPython3)
