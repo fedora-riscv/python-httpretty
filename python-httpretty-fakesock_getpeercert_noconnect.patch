@@ -26,7 +26,7 @@
 -            ((u'organizationalUnitName', u'Domain Control Validated'),),
 -            ((u'commonName', u'*.somewhere.com'),)),
 -        u'subjectAltName': (
--            (u'DNS', u'*somewhere.com'),
+-            (u'DNS', u'*.somewhere.com'),
 -            (u'DNS', u'somewhere.com'),
 -            (u'DNS', u'*')
 -        )
@@ -52,7 +52,7 @@
 +                ((u'organizationalUnitName', u'Domain Control Validated'),),
 +                ((u'commonName', u'*.somewhere.com'),)),
 +            u'subjectAltName': (
-+                (u'DNS', u'*somewhere.com'),
++                (u'DNS', u'*.somewhere.com'),
 +                (u'DNS', u'somewhere.com'),
 +                (u'DNS', u'*')
 +            )
