@@ -136,8 +136,8 @@ LANG=en_US.UTF-8 %{__python3} -m nose -v
 %files -n python2-httpretty
 %doc README.rst
 %license COPYING
-%{python_sitelib}/httpretty
-%{python_sitelib}/httpretty-%{version}-py2.?.egg-info
+%{python2_sitelib}/httpretty
+%{python2_sitelib}/httpretty-%{version}-py2.?.egg-info
 
 %if 0%{?with_python3}
 %files -n python3-httpretty
