@@ -17,7 +17,7 @@
 Name:           python-httpretty
 Version:        0.9.5
 # If github_date is defined, assume a post-release snapshot
-Release:        3%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        4%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
@@ -108,27 +108,26 @@ sed -i 's/^rednose = 1$//' setup.cfg
 %build
 # setup.py contains non-ASCII characters; in Koji build environment
 # default encoding is ASCII and this will choke, so set a UTF-8 locale
-LANG=en_US.UTF-8 %py2_build
+LANG=C.UTF-8 %py2_build
 
 %if 0%{?with_python3}
-LANG=en_US.UTF-8 %py3_build
+%py3_build
 %endif
 
 %install
-rm -rf $RPM_BUILD_ROOT
-LANG=en_US.UTF-8 %py2_install
+LANG=C.UTF-8 %py2_install
 
 %if 0%{?with_python3}
-LANG=en_US.UTF-8 %py3_install
+%py3_install
 %endif
 
 
 %check
 %if %{run_tests}
-LANG=en_US.UTF-8 %{__python2} -m nose -v
+LANG=C.UTF-8 %{__python2} -m nose -v
 
 %if 0%{?with_python3}
-LANG=en_US.UTF-8 %{__python3} -m nose -v
+%{__python3} -m nose -v
 %endif
 %endif
 
@@ -149,6 +148,10 @@ LANG=en_US.UTF-8 %{__python3} -m nose -v
 
 
 %changelog
+* Sun Nov 18 2018 Zbigniew Jędrzejewski-Szmek <zbyszek@in.waw.pl> - 0.9.5-4
+- Drop explicit locale setting for python3, use C.UTF-8 for python2
+  See https://fedoraproject.org/wiki/Changes/Remove_glibc-langpacks-all_from_buildroot
+
 * Sat Jul 14 2018 Fedora Release Engineering <releng@fedoraproject.org> - 0.9.5-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_29_Mass_Rebuild
 
