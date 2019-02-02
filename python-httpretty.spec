@@ -17,7 +17,7 @@
 Name:           python-httpretty
 Version:        0.9.5
 # If github_date is defined, assume a post-release snapshot
-Release:        4%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        5%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
@@ -148,6 +148,9 @@ LANG=C.UTF-8 %{__python2} -m nose -v
 
 
 %changelog
+* Sat Feb 02 2019 Fedora Release Engineering <releng@fedoraproject.org> - 0.9.5-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_30_Mass_Rebuild
+
 * Sun Nov 18 2018 Zbigniew Jędrzejewski-Szmek <zbyszek@in.waw.pl> - 0.9.5-4
 - Drop explicit locale setting for python3, use C.UTF-8 for python2
   See https://fedoraproject.org/wiki/Changes/Remove_glibc-langpacks-all_from_buildroot
