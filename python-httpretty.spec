@@ -1,11 +1,11 @@
-%if 0%{?fedora} || 0%{?rhel} > 7
-# escaping for EPEL.
-%global with_python3 1
+%if %{defined rhel} || (%{defined fedora} && 0%{?fedora} < 30)
+%bcond_without python2
 %endif
+%bcond_without python3
 
 %global github_owner    gabrielfalcao
 %global github_name     HTTPretty
-%global modname         httpretty
+%global srcname         httpretty
 # define these only if actually building from a GH snapshot not a release tarball
 #global github_commit   70af1f8cf925ef50cb5e72212fb0aa46e1451dc3
 #global shortcommit     %%(c=%%{github_commit}; echo ${c:0:7})
@@ -15,45 +15,22 @@
 %global run_tests 1
 
 Name:           python-httpretty
-Version:        0.9.5
+Version:        0.9.6
 # If github_date is defined, assume a post-release snapshot
-Release:        6%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        1%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
-URL:            http://falcao.it/HTTPretty/
-Source0:        https://files.pythonhosted.org/packages/source/h/httpretty/httpretty-%{version}.tar.gz
+URL:            https://github.com/%{github_owner}/%{github_name}
+Source0:        %{pypi_source}
 # Alternative for building from a github snapshot
 #Source0:        https://github.com/%{github_owner}/%{github_name}/archive/%{github_commit}/%{github_name}-%{shortcommit}.tar.gz
 
 # Avoid unnecessary remote access requirement (note: test only actually
 # does a remote connection after PR #313)
-Patch2:         python-httpretty-fakesock_getpeercert_noconnect.patch
-
-# Fix a couple of issues with urllib 1.10 (as found in RHEL 6)
-# https://github.com/gabrielfalcao/HTTPretty/pull/315
-Patch3:         0001-Handle-bugs-in-older-urllib3-versions-in-one-of-the-.patch
-
-# Fix setUp and tearDown not calling reset
-# https://github.com/gabrielfalcao/HTTPretty/pull/317
-Patch4:         0001-Call-reset-from-setUp-and-tearDown-in-addition-to-en.patch
+Patch1:         python-httpretty-fakesock_getpeercert_noconnect.patch
 
 BuildArch:      noarch
-
-BuildRequires:  python2-devel
-BuildRequires:  python2-setuptools
-# For tests
-BuildRequires:  python2-httplib2
-BuildRequires:  python2-mock
-BuildRequires:  python2-nose
-BuildRequires:  python2-requests
-BuildRequires:  python2-sure
-BuildRequires:  python2-urllib3
-BuildRequires:  python2-tornado
-%if 0%{?epel} == 6
-# Need unittest2 to get the 'skip' decorator
-BuildRequires:  python-unittest2
-%endif
 
 %global _description\
 Once upon a time a python developer wanted to use a RESTful API, everything was\
@@ -64,28 +41,45 @@ Don't worry, HTTPretty is here for you.
 
 %description %_description
 
+%if %{with python2}
 %package -n python2-httpretty
 Summary: %summary
-Requires:       python2-six
+Requires:       python%{?fedora:2}-six
+
+BuildRequires:  python2-devel
+BuildRequires:  python2-setuptools
+# For tests
+BuildRequires:  python%{?fedora:2}-httplib2
+BuildRequires:  python%{?fedora:2}-mock
+BuildRequires:  python%{?fedora:2}-nose
+BuildRequires:  python%{?fedora:2}-requests
+BuildRequires:  python%{?fedora:2}-sure
+BuildRequires:  python%{?fedora:2}-urllib3
+BuildRequires:  python%{?fedora:2}-tornado
+%if 0%{?epel} == 6
+# Need unittest2 to get the 'skip' decorator
+BuildRequires:  python-unittest2
+%endif
 %{?python_provide:%python_provide python2-httpretty}
 
 %description -n python2-httpretty %_description
+%endif
 
-%if 0%{?with_python3}
+%if %{with python3}
 %package -n python3-httpretty
 Summary:        HTTP request mock tool for Python 3
-Requires:       python3-six
+Requires:       python%{python3_pkgversion}-six
 
-BuildRequires:  python3-devel
-BuildRequires:  python3-setuptools
+BuildRequires:  python%{python3_pkgversion}-devel
+BuildRequires:  python%{python3_pkgversion}-setuptools
 # For tests
-BuildRequires:  python3-httplib2
-BuildRequires:  python3-mock
-BuildRequires:  python3-nose
-BuildRequires:  python3-requests
-BuildRequires:  python3-sure
-BuildRequires:  python3-urllib3
-BuildRequires:  python3-tornado
+BuildRequires:  python%{python3_pkgversion}-httplib2
+BuildRequires:  python%{python3_pkgversion}-mock
+BuildRequires:  python%{python3_pkgversion}-nose
+BuildRequires:  python%{python3_pkgversion}-requests
+BuildRequires:  python%{python3_pkgversion}-sure
+BuildRequires:  python%{python3_pkgversion}-urllib3
+BuildRequires:  python%{python3_pkgversion}-tornado
 
 %description -n python3-httpretty
 Once upon a time a python developer wanted to use a RESTful API, everything was
@@ -106,39 +100,49 @@ sed -i 's/^with-randomly = 1$//' setup.cfg
 sed -i 's/^rednose = 1$//' setup.cfg
 
 %build
+%if %{with python2}
 # setup.py contains non-ASCII characters; in Koji build environment
 # default encoding is ASCII and this will choke, so set a UTF-8 locale
 LANG=C.UTF-8 %py2_build
+%endif
 
-%if 0%{?with_python3}
+%if %{with_python3}
 %py3_build
 %endif
 
 %install
+%if %{with python2}
 LANG=C.UTF-8 %py2_install
+%endif
 
-%if 0%{?with_python3}
+%if %{with_python3}
 %py3_install
 %endif
 
 
 %check
 %if %{run_tests}
-LANG=C.UTF-8 %{__python2} -m nose -v
 
-%if 0%{?with_python3}
+%if %{with python2}
+LANG=C.UTF-8 %{__python2} -m nose -v
+%endif
+
+%if %{with_python3}
 %{__python3} -m nose -v
 %endif
+
 %endif
 
 
+%if %{with python2}
 %files -n python2-httpretty
 %doc README.rst
 %license COPYING
 %{python2_sitelib}/httpretty
 %{python2_sitelib}/httpretty-%{version}-py2.?.egg-info
+%endif
 
-%if 0%{?with_python3}
+%if %{with_python3}
 %files -n python3-httpretty
 %doc README.rst
 %license COPYING
@@ -148,6 +152,10 @@ LANG=C.UTF-8 %{__python2} -m nose -v
 
 
 %changelog
+* Tue Jul 30 2019 Jiri Popelka <jpopelka@redhat.com> - 0.9.6-1
+- Update to 0.9.6
+- Disable python2 subpackage on F30+
+
 * Fri Jul 26 2019 Fedora Release Engineering <releng@fedoraproject.org> - 0.9.5-6
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_31_Mass_Rebuild
 
