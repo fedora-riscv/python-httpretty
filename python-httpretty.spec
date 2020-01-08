@@ -15,9 +15,9 @@
 %global run_tests 1
 
 Name:           python-httpretty
-Version:        0.9.6
+Version:        0.9.7
 # If github_date is defined, assume a post-release snapshot
-Release:        4%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        1%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
@@ -152,6 +152,9 @@ LANG=C.UTF-8 %{__python2} -m nose -v
 
 
 %changelog
+* Wed Jan 08 2020 Charalampos Stratakis <cstratak@redhat.com> - 0.9.7-1
+- Update to 0.9.7 (rhbz#1759992)
+
 * Thu Oct 03 2019 Miro Hrončok <mhroncok@redhat.com> - 0.9.6-4
 - Rebuilt for Python 3.8.0rc1 (#1748018)
 
