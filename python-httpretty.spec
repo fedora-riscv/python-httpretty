@@ -1,4 +1,4 @@
-%if %{defined rhel} || (%{defined fedora} && 0%{?fedora} < 30)
+%if (%{defined rhel}  && 0%{?rhel} < 8) || (%{defined fedora} && 0%{?fedora} < 30)
 %bcond_without python2
 %endif
 %bcond_without python3
