@@ -15,9 +15,9 @@
 %global run_tests 1
 
 Name:           python-httpretty
-Version:        0.9.7
+Version:        1.0.2
 # If github_date is defined, assume a post-release snapshot
-Release:        2%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        1%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
@@ -29,6 +29,9 @@ Source0:        %{pypi_source}
 # Avoid unnecessary remote access requirement (note: test only actually
 # does a remote connection after PR #313)
 Patch1:         python-httpretty-fakesock_getpeercert_noconnect.patch
+
+# Remote access (these tests were skipped upstream in <= 0.9.7)
+Patch2:         skip-test_passthrough.patch
 
 BuildArch:      noarch
 
@@ -56,6 +59,9 @@ BuildRequires:  python%{?fedora:2}-requests
 BuildRequires:  python%{?fedora:2}-sure
 BuildRequires:  python%{?fedora:2}-urllib3
 BuildRequires:  python%{?fedora:2}-tornado
+BuildRequires:  python%{?fedora:2}-eventlet
+BuildRequires:  python%{?fedora:2}-freezegun
+BuildRequires:  python%{?fedora:2}-redis
 %if 0%{?epel} == 6
 # Need unittest2 to get the 'skip' decorator
 BuildRequires:  python-unittest2
@@ -80,6 +86,9 @@ BuildRequires:  python%{python3_pkgversion}-requests
 BuildRequires:  python%{python3_pkgversion}-sure
 BuildRequires:  python%{python3_pkgversion}-urllib3
 BuildRequires:  python%{python3_pkgversion}-tornado
+BuildRequires:  python%{python3_pkgversion}-eventlet
+BuildRequires:  python%{python3_pkgversion}-freezegun
+BuildRequires:  python%{python3_pkgversion}-redis
 
 %description -n python3-httpretty
 Once upon a time a python developer wanted to use a RESTful API, everything was
@@ -152,6 +161,9 @@ LANG=C.UTF-8 %{__python2} -m nose -v
 
 
 %changelog
+* Fri Mar 27 2020 Jiri Popelka <jpopelka@redhat.com> - 1.0.2-1
+- 1.0.2
+
 * Thu Jan 30 2020 Fedora Release Engineering <releng@fedoraproject.org> - 0.9.7-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_32_Mass_Rebuild
 
