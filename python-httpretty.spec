@@ -12,12 +12,16 @@
 #global github_date     20161011
 
 
+%if %{defined fedora} && 0%{?fedora} < 34
 %global run_tests 1
+%else
+%global run_tests 0
+%endif
 
 Name:           python-httpretty
 Version:        1.0.2
 # If github_date is defined, assume a post-release snapshot
-Release:        3%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        4%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
@@ -161,6 +165,9 @@ LANG=C.UTF-8 %{__python2} -m nose -v
 
 
 %changelog
+* Tue Oct 13 2020 Jiri Popelka <jpopelka@redhat.com> - 1.0.2-4
+- Temporarily run tests on Fedora < 34 only
+
 * Wed Jul 29 2020 Fedora Release Engineering <releng@fedoraproject.org> - 1.0.2-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_33_Mass_Rebuild
 
