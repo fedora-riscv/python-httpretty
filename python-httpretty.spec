@@ -160,7 +160,7 @@ LANG=C.UTF-8 %{__python2} -m nose -v
 %doc README.rst
 %license COPYING
 %{python3_sitelib}/httpretty
-%{python3_sitelib}/httpretty-%{version}-py3.?.egg-info
+%{python3_sitelib}/httpretty-%{version}-py%{python3_version}.egg-info
 %endif
 
 
