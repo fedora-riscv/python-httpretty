@@ -11,17 +11,12 @@
 #global shortcommit     %%(c=%%{github_commit}; echo ${c:0:7})
 #global github_date     20161011
 
-
-%if %{defined fedora} && 0%{?fedora} < 34
 %global run_tests 1
-%else
-%global run_tests 0
-%endif
 
 Name:           python-httpretty
-Version:        1.0.2
+Version:        1.0.5
 # If github_date is defined, assume a post-release snapshot
-Release:        4%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        1%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
@@ -165,6 +160,10 @@ LANG=C.UTF-8 %{__python2} -m nose -v
 
 
 %changelog
+* Wed Jan  6 2021 Jiri Popelka <jpopelka@redhat.com> - 1.0.5-1
+- 1.0.5
+- Enable tests for F34 (#1896191 has been resolved)
+
 * Tue Oct 13 2020 Jiri Popelka <jpopelka@redhat.com> - 1.0.2-4
 - Temporarily run tests on Fedora < 34 only
 
