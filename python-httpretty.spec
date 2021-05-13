@@ -14,9 +14,9 @@
 %global run_tests 1
 
 Name:           python-httpretty
-Version:        1.0.5
+Version:        1.1.0
 # If github_date is defined, assume a post-release snapshot
-Release:        2%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        1%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
@@ -160,6 +160,9 @@ LANG=C.UTF-8 %{__python2} -m nose -v
 
 
 %changelog
+* Thu May 13 2021 Jiri Popelka <jpopelka@redhat.com> - 1.1.0-1
+- 1.1.0
+
 * Wed Jan 27 2021 Fedora Release Engineering <releng@fedoraproject.org> - 1.0.5-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_34_Mass_Rebuild
 

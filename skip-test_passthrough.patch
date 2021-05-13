@@ -1,7 +1,15 @@
-diff -up httpretty-1.0.2/tests/functional/test_passthrough.py.orig httpretty-1.0.2/tests/functional/test_passthrough.py
---- httpretty-1.0.2/tests/functional/test_passthrough.py.orig	2020-03-10 04:08:59.000000000 +0100
-+++ httpretty-1.0.2/tests/functional/test_passthrough.py	2020-03-27 11:40:51.716073339 +0100
-@@ -36,6 +36,7 @@ def http():
+diff -up httpretty-1.1.0/tests/functional/test_passthrough.py.orig httpretty-1.1.0/tests/functional/test_passthrough.py
+--- httpretty-1.1.0/tests/functional/test_passthrough.py.orig	2021-05-13 02:02:46.000000000 +0200
++++ httpretty-1.1.0/tests/functional/test_passthrough.py	2021-05-13 14:03:40.836340941 +0200
+@@ -24,6 +24,7 @@
+ import requests
+ import httpretty
+ 
++from unittest import skip
+ from sure import expect
+ 
+ 
+@@ -35,6 +36,7 @@ def http():
      return sess
  
  
@@ -9,7 +17,7 @@ diff -up httpretty-1.0.2/tests/functional/test_passthrough.py.orig httpretty-1.0
  def test_http_passthrough():
      url = 'http://httpbin.org/status/200'
      response1 = http().get(url)
-@@ -58,6 +59,7 @@ def test_http_passthrough():
+@@ -57,6 +59,7 @@ def test_http_passthrough():
      (response4.content).should.equal(response1.content)
  
  
