@@ -86,7 +86,7 @@ BuildRequires:  python%{python3_pkgversion}-requests
 BuildRequires:  python%{python3_pkgversion}-sure
 BuildRequires:  python%{python3_pkgversion}-urllib3
 BuildRequires:  python%{python3_pkgversion}-tornado
-BuildRequires:  python%{python3_pkgversion}-eventlet
+#BuildRequires:  python%{python3_pkgversion}-eventlet -- not ready for Python 3.10
 BuildRequires:  python%{python3_pkgversion}-freezegun
 BuildRequires:  python%{python3_pkgversion}-redis
 
@@ -137,7 +137,7 @@ LANG=C.UTF-8 %{__python2} -m nose -v
 %endif
 
 %if %{with_python3}
-%{__python3} -m nose -v
+%{__python3} -m nose -v --ignore-files='test_eventlet\.py'
 %endif
 
 %endif
