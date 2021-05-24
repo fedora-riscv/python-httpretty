@@ -1,6 +1,6 @@
-diff -up httpretty-1.1.0/tests/functional/test_passthrough.py.orig httpretty-1.1.0/tests/functional/test_passthrough.py
---- httpretty-1.1.0/tests/functional/test_passthrough.py.orig	2021-05-13 02:02:46.000000000 +0200
-+++ httpretty-1.1.0/tests/functional/test_passthrough.py	2021-05-13 14:03:40.836340941 +0200
+diff -up httpretty-1.1.2/tests/functional/test_passthrough.py.orig httpretty-1.1.2/tests/functional/test_passthrough.py
+--- httpretty-1.1.2/tests/functional/test_passthrough.py.orig	2021-05-14 03:02:06.000000000 +0200
++++ httpretty-1.1.2/tests/functional/test_passthrough.py	2021-05-24 09:48:01.790645558 +0200
 @@ -24,6 +24,7 @@
  import requests
  import httpretty
@@ -23,5 +23,5 @@ diff -up httpretty-1.1.0/tests/functional/test_passthrough.py.orig httpretty-1.1
  
 +@skip
  def test_https_passthrough():
-     url = 'https://raw.githubusercontent.com/gabrielfalcao/httpretty/master/COPYING'
+     url = 'https://httpbin.org/status/200'
  

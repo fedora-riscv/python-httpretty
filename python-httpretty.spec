@@ -14,7 +14,7 @@
 %global run_tests 1
 
 Name:           python-httpretty
-Version:        1.1.0
+Version:        1.1.2
 # If github_date is defined, assume a post-release snapshot
 Release:        1%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
@@ -61,6 +61,7 @@ BuildRequires:  python%{?fedora:2}-tornado
 BuildRequires:  python%{?fedora:2}-eventlet
 BuildRequires:  python%{?fedora:2}-freezegun
 BuildRequires:  python%{?fedora:2}-redis
+BuildRequires:  python%{?fedora:2}-httpx
 %if 0%{?epel} == 6
 # Need unittest2 to get the 'skip' decorator
 BuildRequires:  python-unittest2
@@ -160,6 +161,9 @@ LANG=C.UTF-8 %{__python2} -m nose -v
 
 
 %changelog
+* Mon May 24 2021 Jiri Popelka <jpopelka@redhat.com> - 1.1.2-1
+- 1.1.2
+
 * Thu May 13 2021 Jiri Popelka <jpopelka@redhat.com> - 1.1.0-1
 - 1.1.0
 
