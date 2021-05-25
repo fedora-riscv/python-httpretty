@@ -14,7 +14,7 @@
 %global run_tests 1
 
 Name:           python-httpretty
-Version:        1.1.2
+Version:        1.1.3
 # If github_date is defined, assume a post-release snapshot
 Release:        1%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
@@ -161,6 +161,9 @@ LANG=C.UTF-8 %{__python2} -m nose -v
 
 
 %changelog
+* Tue May 25 2021 Jiri Popelka <jpopelka@redhat.com> - 1.1.3-1
+- 1.1.3
+
 * Mon May 24 2021 Jiri Popelka <jpopelka@redhat.com> - 1.1.2-1
 - 1.1.2
 
