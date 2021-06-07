@@ -16,7 +16,7 @@
 Name:           python-httpretty
 Version:        1.1.3
 # If github_date is defined, assume a post-release snapshot
-Release:        2%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        3%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
@@ -31,6 +31,11 @@ Patch1:         python-httpretty-fakesock_getpeercert_noconnect.patch
 
 # Remote access (these tests were skipped upstream in <= 0.9.7)
 Patch2:         skip-test_passthrough.patch
+
+# Fallback to WARNING when logging.getLogger().level is None
+# This fixes FTBFS in cloud-init
+# https://bugzilla.redhat.com/show_bug.cgi?id=1961555
+Patch3:         https://github.com/gabrielfalcao/HTTPretty/pull/435.patch
 
 BuildArch:      noarch
 
@@ -161,6 +166,9 @@ LANG=C.UTF-8 %{__python2} -m nose -v
 
 
 %changelog
+* Mon Jun 07 2021 Miro Hrončok <mhroncok@redhat.com>
+- Fallback to WARNING when logging.getLogger().level is None
+
 * Fri Jun 04 2021 Python Maint <python-maint@redhat.com> - 1.1.3-2
 - Rebuilt for Python 3.10
 
