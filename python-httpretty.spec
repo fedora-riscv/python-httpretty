@@ -16,7 +16,7 @@
 Name:           python-httpretty
 Version:        1.1.3
 # If github_date is defined, assume a post-release snapshot
-Release:        3%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        4%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
@@ -166,6 +166,9 @@ LANG=C.UTF-8 %{__python2} -m nose -v
 
 
 %changelog
+* Fri Jul 23 2021 Fedora Release Engineering <releng@fedoraproject.org> - 1.1.3-4
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_35_Mass_Rebuild
+
 * Mon Jun 07 2021 Miro Hrončok <mhroncok@redhat.com>
 - Fallback to WARNING when logging.getLogger().level is None
 
