@@ -14,9 +14,9 @@
 %global run_tests 1
 
 Name:           python-httpretty
-Version:        1.1.3
+Version:        1.1.4
 # If github_date is defined, assume a post-release snapshot
-Release:        4%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        1%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
@@ -27,15 +27,10 @@ Source0:        %{pypi_source}
 
 # Avoid unnecessary remote access requirement (note: test only actually
 # does a remote connection after PR #313)
-Patch1:         python-httpretty-fakesock_getpeercert_noconnect.patch
+Patch1: python-httpretty-fakesock_getpeercert_noconnect.patch
 
 # Remote access (these tests were skipped upstream in <= 0.9.7)
-Patch2:         skip-test_passthrough.patch
-
-# Fallback to WARNING when logging.getLogger().level is None
-# This fixes FTBFS in cloud-init
-# https://bugzilla.redhat.com/show_bug.cgi?id=1961555
-Patch3:         https://github.com/gabrielfalcao/HTTPretty/pull/435.patch
+Patch2: skip-test_passthrough.patch
 
 BuildArch:      noarch
 
@@ -166,6 +161,9 @@ LANG=C.UTF-8 %{__python2} -m nose -v
 
 
 %changelog
+* Thu Aug 19 2021 Jiri Popelka <jpopelka@redhat.com> - 1.1.4-1
+- 1.1.4
+
 * Fri Jul 23 2021 Fedora Release Engineering <releng@fedoraproject.org> - 1.1.3-4
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_35_Mass_Rebuild
 
