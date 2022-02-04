@@ -27,6 +27,11 @@ Patch1: python-httpretty-fakesock_getpeercert_noconnect.patch
 # Remote access (these tests were skipped upstream in <= 0.9.7)
 Patch2: skip-test_passthrough.patch
 
+# Remove timeout, which causes some tests to fail in Koji
+#
+# Fixes RHBZ#2046877
+Patch3: test_response-no-within.patch
+
 BuildArch:      noarch
 
 %global _description\
