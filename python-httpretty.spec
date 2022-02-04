@@ -1,8 +1,3 @@
-%if (%{defined rhel}  && 0%{?rhel} < 8) || (%{defined fedora} && 0%{?fedora} < 30)
-%bcond_without python2
-%endif
-%bcond_without python3
-
 %global github_owner    gabrielfalcao
 %global github_name     HTTPretty
 %global srcname         httpretty
@@ -38,40 +33,10 @@ BuildArch:      noarch
 Once upon a time a python developer wanted to use a RESTful API, everything was\
 fine but until the day he needed to test the code that hits the RESTful API:\
 what if the API server is down? What if its content has changed?\
-\
 Don't worry, HTTPretty is here for you.
 
 %description %_description
 
-%if %{with python2}
-%package -n python2-httpretty
-Summary: %summary
-Requires:       python%{?fedora:2}-six
-
-BuildRequires:  python2-devel
-BuildRequires:  python2-setuptools
-# For tests
-BuildRequires:  python%{?fedora:2}-httplib2
-BuildRequires:  python%{?fedora:2}-mock
-BuildRequires:  python%{?fedora:2}-nose
-BuildRequires:  python%{?fedora:2}-requests
-BuildRequires:  python%{?fedora:2}-sure
-BuildRequires:  python%{?fedora:2}-urllib3
-BuildRequires:  python%{?fedora:2}-tornado
-BuildRequires:  python%{?fedora:2}-eventlet
-BuildRequires:  python%{?fedora:2}-freezegun
-BuildRequires:  python%{?fedora:2}-redis
-BuildRequires:  python%{?fedora:2}-httpx
-%if 0%{?epel} == 6
-# Need unittest2 to get the 'skip' decorator
-BuildRequires:  python-unittest2
-%endif
-%{?python_provide:%python_provide python2-httpretty}
-
-%description -n python2-httpretty %_description
-%endif
-
-%if %{with python3}
 %package -n python3-httpretty
 Summary:        HTTP request mock tool for Python 3
 Requires:       python%{python3_pkgversion}-six
@@ -86,7 +51,7 @@ BuildRequires:  python%{python3_pkgversion}-requests
 BuildRequires:  python%{python3_pkgversion}-sure
 BuildRequires:  python%{python3_pkgversion}-urllib3
 BuildRequires:  python%{python3_pkgversion}-tornado
-#BuildRequires:  python%{python3_pkgversion}-eventlet -- not ready for Python 3.10
+BuildRequires:  python%{python3_pkgversion}-eventlet
 BuildRequires:  python%{python3_pkgversion}-freezegun
 BuildRequires:  python%{python3_pkgversion}-redis
 
@@ -94,9 +59,8 @@ BuildRequires:  python%{python3_pkgversion}-redis
 Once upon a time a python developer wanted to use a RESTful API, everything was
 fine but until the day he needed to test the code that hits the RESTful API:
 what if the API server is down? What if its content has changed?
-
 Don't worry, HTTPretty is here for you.
-%endif
+
 
 %prep
 %autosetup -n httpretty-%{version} -p1
@@ -109,55 +73,21 @@ sed -i 's/^with-randomly = 1$//' setup.cfg
 sed -i 's/^rednose = 1$//' setup.cfg
 
 %build
-%if %{with python2}
-# setup.py contains non-ASCII characters; in Koji build environment
-# default encoding is ASCII and this will choke, so set a UTF-8 locale
-LANG=C.UTF-8 %py2_build
-%endif
-
-%if %{with_python3}
 %py3_build
-%endif
 
 %install
-%if %{with python2}
-LANG=C.UTF-8 %py2_install
-%endif
-
-%if %{with_python3}
 %py3_install
-%endif
-
 
 %check
 %if %{run_tests}
-
-%if %{with python2}
-LANG=C.UTF-8 %{__python2} -m nose -v
+%{__python3} -m nose -v
 %endif
 
-%if %{with_python3}
-%{__python3} -m nose -v --ignore-files='test_eventlet\.py'
-%endif
-
-%endif
-
-
-%if %{with python2}
-%files -n python2-httpretty
-%doc README.rst
-%license COPYING
-%{python2_sitelib}/httpretty
-%{python2_sitelib}/httpretty-%{version}-py2.?.egg-info
-%endif
-
-%if %{with_python3}
 %files -n python3-httpretty
 %doc README.rst
 %license COPYING
 %{python3_sitelib}/httpretty
 %{python3_sitelib}/httpretty-%{version}-py%{python3_version}.egg-info
-%endif
 
 
 %changelog
