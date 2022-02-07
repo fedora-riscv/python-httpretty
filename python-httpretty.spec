@@ -11,7 +11,7 @@
 Name:           python-httpretty
 Version:        1.1.4
 # If github_date is defined, assume a post-release snapshot
-Release:        3%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        6%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
