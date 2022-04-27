@@ -6,12 +6,17 @@
 #global shortcommit     %%(c=%%{github_commit}; echo ${c:0:7})
 #global github_date     20161011
 
+%if 0%{?fedora}
 %global run_tests 1
+%else
+# missing deps in epel9
+%global run_tests 0
+%endif
 
 Name:           python-httpretty
 Version:        1.1.4
 # If github_date is defined, assume a post-release snapshot
-Release:        6%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        7%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
@@ -48,7 +53,7 @@ Requires:       python%{python3_pkgversion}-six
 
 BuildRequires:  python%{python3_pkgversion}-devel
 BuildRequires:  python%{python3_pkgversion}-setuptools
-# For tests
+%if %{run_tests}
 BuildRequires:  python%{python3_pkgversion}-httplib2
 BuildRequires:  python%{python3_pkgversion}-mock
 BuildRequires:  python%{python3_pkgversion}-nose
@@ -59,6 +64,7 @@ BuildRequires:  python%{python3_pkgversion}-tornado
 BuildRequires:  python%{python3_pkgversion}-eventlet
 BuildRequires:  python%{python3_pkgversion}-freezegun
 BuildRequires:  python%{python3_pkgversion}-redis
+%endif
 
 %description -n python3-httpretty
 Once upon a time a python developer wanted to use a RESTful API, everything was
