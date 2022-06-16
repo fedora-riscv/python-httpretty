@@ -16,7 +16,7 @@
 Name:           python-httpretty
 Version:        1.1.4
 # If github_date is defined, assume a post-release snapshot
-Release:        7%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        8%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
@@ -102,4 +102,7 @@ sed -i 's/^rednose = 1$//' setup.cfg
 
 
 %changelog
+* Thu Jun 16 2022 Python Maint <python-maint@redhat.com> - 1.1.4-8
+- Rebuilt for Python 3.11
+
 %autochangelog
