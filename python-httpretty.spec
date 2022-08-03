@@ -1,10 +1,6 @@
 %global github_owner    gabrielfalcao
 %global github_name     HTTPretty
 %global srcname         httpretty
-# define these only if actually building from a GH snapshot not a release tarball
-#global github_commit   70af1f8cf925ef50cb5e72212fb0aa46e1451dc3
-#global shortcommit     %%(c=%%{github_commit}; echo ${c:0:7})
-#global github_date     20161011
 
 %if 0%{?fedora}
 %global run_tests 1
@@ -15,15 +11,12 @@
 
 Name:           python-httpretty
 Version:        1.1.4
-# If github_date is defined, assume a post-release snapshot
-Release:        9%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        %autorelease
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
 URL:            https://github.com/%{github_owner}/%{github_name}
 Source0:        %{pypi_source}
-# Alternative for building from a github snapshot
-#Source0:        https://github.com/%%{github_owner}/%%{github_name}/archive/%%{github_commit}/%%{github_name}-%%{shortcommit}.tar.gz
 
 # Avoid unnecessary remote access requirement (note: test only actually
 # does a remote connection after PR #313)
@@ -102,10 +95,4 @@ sed -i 's/^rednose = 1$//' setup.cfg
 
 
 %changelog
-* Fri Jul 22 2022 Fedora Release Engineering <releng@fedoraproject.org> - 1.1.4-9
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_37_Mass_Rebuild
-
-* Thu Jun 16 2022 Python Maint <python-maint@redhat.com> - 1.1.4-8
-- Rebuilt for Python 3.11
-
 %autochangelog
