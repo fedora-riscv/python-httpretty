@@ -1,10 +1,6 @@
 %global github_owner    gabrielfalcao
 %global github_name     HTTPretty
 %global srcname         httpretty
-# define these only if actually building from a GH snapshot not a release tarball
-#global github_commit   70af1f8cf925ef50cb5e72212fb0aa46e1451dc3
-#global shortcommit     %%(c=%%{github_commit}; echo ${c:0:7})
-#global github_date     20161011
 
 %if 0%{?fedora}
 %global run_tests 1
@@ -15,27 +11,23 @@
 
 Name:           python-httpretty
 Version:        1.1.4
-# If github_date is defined, assume a post-release snapshot
-Release:        7%{?github_date:.%{github_date}git%{shortcommit}}%{?dist}
+Release:        %autorelease
 Summary:        HTTP request mock tool for Python
 
 License:        MIT
 URL:            https://github.com/%{github_owner}/%{github_name}
 Source0:        %{pypi_source}
-# Alternative for building from a github snapshot
-#Source0:        https://github.com/%%{github_owner}/%%{github_name}/archive/%%{github_commit}/%%{github_name}-%%{shortcommit}.tar.gz
-
 # Avoid unnecessary remote access requirement (note: test only actually
 # does a remote connection after PR #313)
-Patch1: python-httpretty-fakesock_getpeercert_noconnect.patch
-
+Patch1:         python-httpretty-fakesock_getpeercert_noconnect.patch
 # Remote access (these tests were skipped upstream in <= 0.9.7)
-Patch2: skip-test_passthrough.patch
-
+Patch2:         skip-test_passthrough.patch
 # Remove timeout, which causes some tests to fail in Koji
-#
+# 
 # Fixes RHBZ#2046877
-Patch3: test_response-no-within.patch
+Patch3:         test_response-no-within.patch
+# https://github.com/gabrielfalcao/HTTPretty/issues/457
+Patch4:         test_handle_slashes.patch
 
 BuildArch:      noarch
 
